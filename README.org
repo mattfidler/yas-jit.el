@@ -1,0 +1,57 @@
+#+TITLE: Yasnippets loaded Just in Time for Use
+#+AUTHOR: Matthew L. Fidler
+=yas-jit= is a package to load yasnippets as you use them, not all at
+once.
+
+* Installing and using yas-jit
+Instead of starting with:
+#+BEGIN_SRC emacs-lisp :results silent
+(require 'yasnippet)
+(setq yas/root-directory snippet-directory)
+(yas/load-directory yas/root-directory)
+#+END_SRC
+
+which takes some time on initial loading, use
+
+#+BEGIN_SRC emacs-lisp :results silent
+(require 'yas-jit)
+(setq yas/root-directory snippet-directory)
+(yas/jit-load)
+#+END_SRC
+
+* Implementation Options
+** Caching Known Directories
+This option allows caching of all the snippet directories.  That way,
+no directory listing is needed to load yasnippet.  I don't believe
+this adds much speed so it is disabled by default.  To customize this
+option, type in =M-x customize-variable yas/jit-use-cache-dir=
+
+** Caching snippet directories into one file
+This option allows caching of all the snippets for a particular mode
+into one directory.  I believe this adds substantial speed to the
+startup, so it is enabled by default.  To customize this option, type
+in =M-x customize-variable yas/jit-cache-snippets=
+
+* Differences in installation between the Yasnippet versions
+For yasnippet 0.6 the root directory is something like:
+
+#+BEGIN_SRC emacs-lisp :results silent
+(setq yas/root-directory "~/.emacs.d/snippets/text-mode/")
+#+END_SRC
+
+
+
+For yasnippet 0.7 the root directory is something like:
+#+BEGIN_SRC emacs-lisp :results silent
+(setq yas/root-directory "~/.emacs.d/snippets/")
+#+END_SRC
+
+This is because the root directory assumes that each load-path
+contains directories of modes with snippets. 
+* Notes for yas-jit
+Note that yasnippet requires something in the hash,
+otherwise it loads everything.  Therefore text-mode snippets are
+loaded by default.
+
+This will probably not be put in the trunk of yasnippet.
+#  LocalWords:  yasnippets Fidler
