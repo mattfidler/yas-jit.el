@@ -6,9 +6,9 @@
 ;; Maintainer: Matthew L. Fidler
 ;; Created: Wed Oct 27 08:14:43 2010 (-0500)
 ;; Version: 0.8.3
-;; Last-Updated: Mon Nov 28 08:59:31 2011 (-0600)
+;; Last-Updated: Mon Nov 28 09:22:40 2011 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 154
+;;     Update #: 157
 ;; URL: http://www.emacswiki.org/emacs/download/yas-jit.el
 ;; Keywords: Yasnippet fast loading.
 ;; Compatibility: Emacs 23.2 with Yasnippet 0.6 or 0.7
@@ -50,6 +50,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;; Change Log:
+;; 28-Nov-2011    Matthew L. Fidler  
+;;    Last-Updated: Mon Nov 28 09:21:45 2011 (-0600) #155 (Matthew L. Fidler)
+;;    Changed (save-excursion (set-buffer x)) to (with-currend-buffer x)
 ;; 28-Nov-2011    Matthew L. Fidler  
 ;;    Last-Updated: Mon Nov 28 08:55:36 2011 (-0600) #153 (Matthew L. Fidler)
 ;;    Possibly fixed the cache deletion problem.
@@ -316,10 +319,9 @@
         (yas/get-jit-loads)
         (let ( (modes '())
                 (bufs (buffer-list)))
-           ;; Load snippets for major modes of all open buffers
-           (mapc (lambda(x)
-                   (save-excursion
-                     (set-buffer x)
+          ;; Load snippets for major modes of all open buffers
+          (mapc (lambda(x)
+                  (with-current-buffer x
                      (yas/jit-hook) ;; Load current mode's snippets.
                      ))
                  bufs)))
