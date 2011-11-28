@@ -5,10 +5,10 @@
 ;; Author: Matthew L. Fidler
 ;; Maintainer: Matthew L. Fidler
 ;; Created: Wed Oct 27 08:14:43 2010 (-0500)
-;; Version: 0.8.2
-;; Last-Updated: Fri Nov 18 16:01:36 2011 (-0600)
+;; Version: 0.8.3
+;; Last-Updated: Mon Nov 28 08:59:31 2011 (-0600)
 ;;           By: Matthew L. Fidler
-;;     Update #: 143
+;;     Update #: 154
 ;; URL: http://www.emacswiki.org/emacs/download/yas-jit.el
 ;; Keywords: Yasnippet fast loading.
 ;; Compatibility: Emacs 23.2 with Yasnippet 0.6 or 0.7
@@ -38,7 +38,7 @@
 ;;   (setq yas/root-directory "~/.emacs.d/snippets/");;
 ;;
 ;;   This is because the root directory assumes that each load-path
-;;   contains directories of modes with snippets. 
+;;   contains directories of modes with snippets.
 ;;
 ;;   Also note that yasnippet requires something in the hash,
 ;;   otherwise it loads everything.  Therefore text-mode snippets are
@@ -50,6 +50,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;; Change Log:
+;; 28-Nov-2011    Matthew L. Fidler  
+;;    Last-Updated: Mon Nov 28 08:55:36 2011 (-0600) #153 (Matthew L. Fidler)
+;;    Possibly fixed the cache deletion problem.
+;; 22-Nov-2011    Matthew L. Fidler  
+;;    Last-Updated: Tue Nov 22 10:00:26 2011 (-0600) #146 (Matthew L. Fidler)
+;;    Put a comment to show the cache that yas/jit is trying to delete
 ;; 29-Sep-2011    Matthew L. Fidler  
 ;;    Last-Updated: Thu Sep 29 16:09:31 2011 (-0500) #137 (Matthew L. Fidler)
 ;;    Updated documentation section of file
@@ -160,9 +166,11 @@
 
 (defun yas/jit-delete-cache ()
   "Delete cache"
+  (interactive)
   (when (file-readable-p "~/.yas-jit-cache.el")
     (delete-file "~/.yas-jit-cache.el"))
   (let ((f (yas/jit-dir-snippet-cache (file-name-directory (buffer-file-name)))))
+    (message "Looking to delete cache: %s" f)
     (when (file-readable-p f)
       (delete-file f))))
 
@@ -292,10 +300,13 @@
 (add-hook 'after-change-major-mode-hook 'yas/jit-hook-run)
 (add-hook 'find-file-hook 'yas/jit-hook-run)
 (add-hook 'change-major-mode-hook 'yas/jit-hook-run)
-(add-hook 'write-contents-hook
-	  (lambda ()
-	    (when snippet-mode
-              (yas/jit-delete-cache))))
+(add-hook 'write-contents-hook 'yas/jit-delete-cache)
+
+(add-hook 'snippet-mode-hook
+          (lambda()
+            (add-hook 'after-save-hook 'yas/jit-delete-cache nil t)
+            (add-hook 'write-contents-hook 'yas/jit-delete-cache nil t)))
+
 
 (defun yas/load-snippet-dirs ()
   "Reload the directories listed in `yas/snippet-dirs' or
@@ -340,7 +351,7 @@
     (if (not (file-exists-p (concat d.. "/root")))
 	(make-directory (concat d.. "/root")))
     (rename-file d (concat d.. "/root/" mode))
-
+    
     (yas/compile-bundle (if (file-readable-p (concat d.. "/root/" mode "/.yas-setup.el"))
                             (concat d.. "/root/" mode "/.yas-setup.el")
      			  empty-file)
