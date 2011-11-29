@@ -55,3 +55,7 @@ loaded by default.
 
 This will probably not be put in the trunk of yasnippet.
 #  LocalWords:  yasnippets Fidler
+* Known Issues
+- When using a file-cache, currently the system does not allow editing
+  of the snippets in place.  Rather, the snippet that is edited is
+  assumed to be in memory.
