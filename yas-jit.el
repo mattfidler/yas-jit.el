@@ -5,10 +5,10 @@
 ;; Author: Matthew L. Fidler
 ;; Maintainer: Matthew L. Fidler
 ;; Created: Wed Oct 27 08:14:43 2010 (-0500)
-;; Version: 0.8.3
-;; Last-Updated: Mon Nov 28 09:22:40 2011 (-0600)
-;;           By: Matthew L. Fidler
-;;     Update #: 157
+;; Version: 0.8.6
+;; Last-Updated: Mon Dec 12 09:22:52 2011 (-0600)
+;;           By: us041375
+;;     Update #: 178
 ;; URL: http://www.emacswiki.org/emacs/download/yas-jit.el
 ;; Keywords: Yasnippet fast loading.
 ;; Compatibility: Emacs 23.2 with Yasnippet 0.6 or 0.7
@@ -50,6 +50,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;; Change Log:
+;; 12-Dec-2011      
+;;    Last-Updated: Mon Dec 12 09:22:00 2011 (-0600) #176 (us041375)
+;;    Deleted cache on menu-based ``reload-all''
+;; 12-Dec-2011    Matthew L. Fidler  
+;;    Last-Updated: Mon Dec 12 08:52:51 2011 (-0600) #160 (Matthew L. Fidler)
+;;    Added yas/jit-compile-bundle to allow file-names to be saved.
 ;; 28-Nov-2011    Matthew L. Fidler  
 ;;    Last-Updated: Mon Nov 28 09:21:45 2011 (-0600) #155 (Matthew L. Fidler)
 ;;    Changed (save-excursion (set-buffer x)) to (with-currend-buffer x)
@@ -152,6 +158,11 @@
 
 (defcustom yas/jit-cache-snippets t
   "Combine snippets of a directory into a single file for each mode."
+  :type 'boolean
+  :group 'yasnippet)
+
+(defcustom yas/jit-delete-cache-on-interactive-reload-all t
+  "Removes the snippet cache on a menu-based reload all."
   :type 'boolean
   :group 'yasnippet)
 
@@ -310,7 +321,22 @@
             (add-hook 'after-save-hook 'yas/jit-delete-cache nil t)
             (add-hook 'write-contents-hook 'yas/jit-delete-cache nil t)))
 
-
+(defadvice yas/reload-all (around yas-jit-advice)
+  "Makes Reload-all actually delete any caches."
+  (when (and yas/jit-delete-cache-on-interactive-reload-all
+             (interactive-p))
+    (when (file-readable-p "~/.yas-jit-cache.el")
+      (delete-file "~/.yas-jit.cache.el"))
+    (setq yas/get-jit-loads-again t)
+    (yas/get-jit-loads)
+    (mapc (lambda(dirs)
+            (let ((cache (yas/jit-dir-snippet-cache
+                          (nth 1 dirs))))
+              (when (file-readable-p cache)
+                (delete-file cache))))
+          yas/jit-loads))
+  ad-do-it)
+(ad-activate 'yas/reload-all)
 (defun yas/load-snippet-dirs ()
   "Reload the directories listed in `yas/snippet-dirs' or
    prompt the user to select one."
@@ -337,6 +363,133 @@
       (setq d.. (replace-match "" t t d)))
     (concat d.. "/.yas-" mode "-snippets.el")))
 
+
+;;; Lifted from yas/compile-bundle.  Needs to keep the file-name
+;;; though.
+
+(defun yas/jit-compile-bundle
+  (&optional yasnippet yasnippet-bundle snippet-roots code dropdown use-file)
+  "Compile snippets in SNIPPET-ROOTS to a single bundle file.
+
+YASNIPPET is the yasnippet.el file path.
+
+YASNIPPET-BUNDLE is the output file of the compile result.
+
+SNIPPET-ROOTS is a list of root directories that contains the
+snippets definition.
+
+CODE is the code to be placed at the end of the generated file
+and that can initialize the YASnippet bundle.
+
+Last optional argument DROPDOWN is the filename of the
+dropdown-list.el library.
+
+Here's the default value for all the parameters:
+
+(yas/jit-compile-bundle \"yasnippet.el\"
+                    \"yasnippet-bundle.el\"
+                    \"snippets\")
+\"(yas/initialize-bundle)
+### autoload
+(require 'yasnippet-bundle)`\"
+\"dropdown-list.el\")
+"
+(interactive (concat "ffind the yasnippet.el file: \nFTarget bundle file: "
+                     "\nDSnippet directory to bundle: \nMExtra code? \nfdropdown-library: "))
+
+(let* ((yasnippet (or yasnippet
+                      "yasnippet.el"))
+       (yasnippet-bundle (or yasnippet-bundle
+                             "./yasnippet-bundle.el"))
+       (snippet-roots (or snippet-roots
+                          "snippets"))
+       (dropdown (or dropdown
+                     "dropdown-list.el"))
+       (code (or (and code
+                      (condition-case err (read code) (error nil))
+                      code)
+                 (concat "(yas/initialize-bundle)"
+                         "\n;;;###autoload" ; break through so that won't
+                         "(require 'yasnippet-bundle)")))
+       (dirs (or (and (listp snippet-roots) snippet-roots)
+                 (list snippet-roots)))
+       (bundle-buffer nil))
+  (with-temp-file yasnippet-bundle
+    (insert ";;; yasnippet-bundle.el --- "
+            "Yet another snippet extension (Auto compiled bundle)\n")
+    (insert-file-contents yasnippet)
+    (goto-char (point-max))
+    (insert "\n")
+    (when dropdown
+      (insert-file-contents dropdown))
+    (goto-char (point-max))
+    (insert ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n")
+    (insert ";;;;      Auto-generated code         ;;;;\n")
+    (insert ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n")
+    (insert "(defun yas/initialize-bundle ()\n"
+            "  \"Initialize YASnippet and load snippets in the bundle.\"")
+    (flet ((yas/define-snippets
+            (mode snippets &optional parent-or-parents)
+            (insert ";;; snippets for " (symbol-name mode) ", subdir " (file-name-nondirectory (replace-regexp-in-string "/$" "" default-directory)) "\n")
+            (let ((literal-snippets (list)))
+              (dolist (snippet snippets)
+                (let ((key                    (first   snippet))
+                      (template-content       (second  snippet))
+                      (name                   (third   snippet))
+                      (condition              (fourth  snippet))
+                      (group                  (fifth   snippet))
+                      (expand-env             (sixth   snippet))
+                      (file                   (if use-file
+                                                  (replace-regexp-in-string
+                                                   "root/" ""
+                                                   (abbreviate-file-name
+                                                    (seventh snippet)))
+                                                nil)) ;; (seventh snippet)) ;; omit on purpose
+                      (binding                (eighth  snippet))
+                      (uuid                    (ninth   snippet)))
+                  (push `(,key
+                          ,template-content
+                          ,name
+                          ,condition
+                          ,group
+                          ,expand-env
+                          ,file
+                          ,binding
+                          ,uuid)
+                        literal-snippets)))
+              (insert (pp-to-string `(yas/define-snippets ',mode ',literal-snippets ',parent-or-parents)))
+              (insert "\n\n"))))
+      (dolist (dir dirs)
+        (dolist (subdir (yas/subdirs dir))
+          (let ((file (concat subdir "/.yas-setup.el")))
+            (when (file-readable-p file)
+              (insert "\n;; Supporting elisp for subdir " (file-name-nondirectory subdir) "\n\n")
+              (with-temp-buffer
+                (insert-file-contents file)
+                (replace-regexp "^;;.*$" "" nil (point-min) (point-max))
+                (replace-regexp "^[\s\t]*\n\\([\s\t]*\n\\)+" "\n" nil (point-min) (point-max))
+                (kill-region (point-min) (point-max)))
+              (yank)))
+          (yas/load-directory-1 subdir nil))))
+    
+    (insert (pp-to-string `(yas/global-mode 1)))
+    (insert ")\n\n" code "\n")
+    
+    ;; bundle-specific provide and value for yas/dont-activate
+    (let ((bundle-feature-name (file-name-nondirectory
+                                (file-name-sans-extension
+                                 yasnippet-bundle))))
+      (insert (pp-to-string `(set-default 'yas/dont-activate
+                                          #'(lambda ()
+                                              (and (or yas/snippet-dirs
+                                                       (featurep ',(make-symbol bundle-feature-name)))
+                                                   (null (yas/get-snippet-tables)))))))
+      (insert (pp-to-string `(provide ',(make-symbol bundle-feature-name)))))
+    
+    (insert ";;; "
+            (file-name-nondirectory yasnippet-bundle)
+            " ends here\n"))))
+
 ;;;###autoload
 (defun yas/jit-compile-dir (dir)
   "Compiles directory into a \"bundle\".  Useful for caching purposes."
@@ -354,11 +507,13 @@
 	(make-directory (concat d.. "/root")))
     (rename-file d (concat d.. "/root/" mode))
     
-    (yas/compile-bundle (if (file-readable-p (concat d.. "/root/" mode "/.yas-setup.el"))
+    (yas/jit-compile-bundle (if (file-readable-p (concat d.. "/root/" mode "/.yas-setup.el"))
                             (concat d.. "/root/" mode "/.yas-setup.el")
      			  empty-file)
      			(concat d.. "/.yas-" mode "-snippets.el")
-     			`(,(concat d.. "/root/")) (concat ) empty-file)
+     			`(,(concat d.. "/root/")) (concat ) empty-file
+                        t
+                        )
     (rename-file (concat d.. "/root/" mode ) d)
     (delete-directory (concat d.. "/root"))
     (delete-file empty-file)
