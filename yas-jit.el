@@ -188,7 +188,7 @@
     (when (file-readable-p f)
       (delete-file f))))
 
-
+;;;###autoload
 (defun yas/get-jit-loads ()
   "* Loads Snippet directories just in time.  Should speed up the start-up of Yasnippet"
   (if (and yas/jit-use-cache-dir (file-readable-p "~/.yas-jit-cache.el"))
@@ -302,6 +302,7 @@
             (setq test-mode (intern (pop other-modes)))
             (setq tmp (assoc test-mode yas/jit-loads))))))))
 
+;;;###autoload
 (defalias 'yas/jit-load 'yas/get-jit-loads)
 
 (defun yas/jit-hook-run ()
