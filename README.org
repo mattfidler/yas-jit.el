@@ -1,5 +1,13 @@
 #+TITLE: Yasnippets loaded Just in Time for Use
 #+AUTHOR: Matthew L. Fidler
+
+* NOTE:
+This file is for the 0.6.0 loading of yansippets *OR* for reference.  After informing the 
+yasnippet developer of the slow load times, he decided to implement his own JIT loading
+mechanism. For 0.7.0 series, this is now unnecessary.
+
+* Archived information
+
 =yas-jit= is a package to load yasnippets as you use them, not all at
 once.
 
