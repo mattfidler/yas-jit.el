@@ -6,9 +6,9 @@
 ;; Maintainer: Matthew L. Fidler
 ;; Created: Wed Oct 27 08:14:43 2010 (-0500)
 ;; Version: 0.8.6
-;; Last-Updated: Tue Apr 17 10:51:15 2012 (-0500)
+;; Last-Updated: Mon Jun 25 14:09:04 2012 (-0500)
 ;;           By: Matthew L. Fidler
-;;     Update #: 200
+;;     Update #: 202
 ;; URL: http://www.emacswiki.org/emacs/download/yas-jit.el
 ;; Keywords: Yasnippet fast loading.
 ;; Compatibility: Emacs 23.2 with Yasnippet 0.6 or 0.7
@@ -50,6 +50,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;; Change Log:
+;; 25-Jun-2012    Matthew L. Fidler  
+;;    Last-Updated: Mon Jun 25 14:07:22 2012 (-0500) #201 (Matthew L. Fidler)
+;;    Updated to work with the latest trunk
 ;; 12-Dec-2011      
 ;;    Last-Updated: Mon Dec 12 09:22:00 2011 (-0600) #176 (us041375)
 ;;    Deleted cache on menu-based ``reload-all''
@@ -486,7 +489,7 @@ Here's the default value for all the parameters:
                 (replace-regexp "^[\s\t]*\n\\([\s\t]*\n\\)+" "\n" nil (point-min) (point-max))
                 (kill-region (point-min) (point-max)))
               (yank)))
-          (yas/load-directory-1 subdir nil))))
+          (yas/load-directory-1 subdir nil nil))))
     
     (insert (pp-to-string `(yas/global-mode 1)))
     (insert ")\n\n" code "\n")
